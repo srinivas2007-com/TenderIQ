@@ -10,7 +10,6 @@ import { TenderRequirementsTab } from './tabs/TenderRequirementsTab';
 import { TenderDocumentsTab } from './tabs/TenderDocumentsTab';
 import { TenderRisksTab } from './tabs/TenderRisksTab';
 import { TenderDeadlinesTab } from './tabs/TenderDeadlinesTab';
-import { TenderPdfTab } from './tabs/TenderPdfTab';
 import { TenderCostProfitTab } from './tabs/TenderCostProfitTab';
 import { TenderResourcesTab } from './tabs/TenderResourcesTab';
 import {
@@ -19,7 +18,6 @@ import {
   CheckSquare,
   AlertTriangle,
   Clock,
-  FileCode,
   ArrowLeft,
   Loader2,
   RotateCw,
@@ -35,9 +33,8 @@ export const TenderDetailPage: React.FC = () => {
   const [analysis, setAnalysis] = useState<TenderAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'analysis' | 'requirements' | 'documents' | 'risks' | 'deadlines' | 'cost_profit' | 'resources' | 'pdf'
+    'analysis' | 'requirements' | 'documents' | 'risks' | 'deadlines' | 'cost_profit' | 'resources'
   >('analysis');
-  const [pdfTargetPage, setPdfTargetPage] = useState<number>(1);
   const [recalculating, setRecalculating] = useState(false);
   const [isStartingBid, setIsStartingBid] = useState(false);
   const { success, error } = useToast();
@@ -141,9 +138,8 @@ export const TenderDetailPage: React.FC = () => {
     }
   };
 
-  const handleNavigateToPage = (pageNum: number) => {
-    setPdfTargetPage(pageNum);
-    setActiveTab('pdf');
+  const handleNavigateToPage = (_pageNum: number) => {
+    setActiveTab('requirements');
   };
 
   if (loading && !tender) {
@@ -202,7 +198,6 @@ export const TenderDetailPage: React.FC = () => {
     { id: 'resources', label: 'Resources & Clarifications', icon: Users },
     { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
     { id: 'deadlines', label: 'Dates & Deadlines', icon: Clock },
-    { id: 'pdf', label: 'Source PDF', icon: FileCode },
   ];
 
   return (
@@ -371,13 +366,6 @@ export const TenderDetailPage: React.FC = () => {
         )}
         {activeTab === 'deadlines' && (
           <TenderDeadlinesTab tenderId={id!} />
-        )}
-        {activeTab === 'pdf' && tender && (
-          <TenderPdfTab
-            tenderId={id!}
-            currentPage={pdfTargetPage}
-            fileName={tender.file_name || tender.title}
-          />
         )}
       </div>
     </div>

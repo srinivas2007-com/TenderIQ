@@ -23,35 +23,48 @@ export const SimulatorPage: React.FC = () => {
   const loadInitialData = async () => {
     try {
       const tenderList = await api.getTenders();
-      const completed = tenderList.filter((t) => t.status === 'completed');
-      setTenders(completed);
+      const completed = tenderList.filter(
+        (t) => t.status === 'completed' || !!t.opportunity_score || (t.status_step && t.status_step >= 3)
+      );
+      const availableTenders = completed.length > 0 ? completed : tenderList;
+      setTenders(availableTenders);
 
-      const comp = await api.getCompanyProfile();
-      if (comp) {
-        setEngineers(comp.engineers_count || 6);
-        setTurnover(comp.average_turnover || comp.annual_turnover || 5.0);
-        setWorkingCapital(comp.working_capital ? comp.working_capital / 10000000 : 1.5);
-        setCompletedProjects(comp.completed_projects_count || 3);
-      }
+      const comp = await api.getCompanyProfile().catch(() => null);
+      const initialEng = comp?.engineers_count || 6;
+      const initialTurnover = comp?.average_turnover || comp?.annual_turnover || 5.0;
+      const initialWc = comp?.working_capital ? comp.working_capital / 10000000 : 1.5;
+      const initialProjects = comp?.completed_projects_count || 3;
 
-      if (completed.length > 0) {
-        setSelectedTenderId(completed[0].id);
-        triggerSimulation(completed[0].id, comp?.engineers_count || 6, comp?.average_turnover || 5.0);
+      setEngineers(initialEng);
+      setTurnover(initialTurnover);
+      setWorkingCapital(initialWc);
+      setCompletedProjects(initialProjects);
+
+      if (availableTenders.length > 0) {
+        setSelectedTenderId(availableTenders[0].id);
+        triggerSimulation(availableTenders[0].id, initialEng, initialTurnover, initialWc, initialProjects);
       }
     } catch (err: any) {
       error('Failed to load simulator data', err.message);
     }
   };
 
-  const triggerSimulation = async (tenderId?: string, eng?: number, to?: number) => {
+  const triggerSimulation = async (
+    tenderId?: string,
+    eng?: number,
+    to?: number,
+    wc?: number,
+    cp?: number
+  ) => {
+    const tid = tenderId || selectedTenderId || (tenders.length > 0 ? tenders[0].id : undefined);
     try {
       setIsLoading(true);
       const res = await api.runSimulation({
-        tender_id: tenderId || selectedTenderId,
+        tender_id: tid,
         engineers_count: eng !== undefined ? eng : engineers,
         turnover: to !== undefined ? to : turnover,
-        working_capital: workingCapital * 10000000,
-        completed_projects: completedProjects,
+        working_capital: (wc !== undefined ? wc : workingCapital) * 10000000,
+        completed_projects: cp !== undefined ? cp : completedProjects,
       });
       setSimulationResult(res);
     } catch (err: any) {
@@ -248,7 +261,7 @@ export const SimulatorPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-[11px] text-slate-500">Opportunity Score</p>
-                    <p className="text-xl font-bold text-slate-800">{simulationResult.current.opportunity_score.toFixed(0)}</p>
+                    <p className="text-xl font-bold text-slate-800">{(simulationResult.current.opportunity_score ?? 0).toFixed(0)}</p>
                   </div>
                   <div>
                     <p className="text-[11px] text-slate-500">Resource Gap</p>
@@ -267,7 +280,7 @@ export const SimulatorPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-[11px] text-blue-600">Opportunity Score</p>
-                    <p className="text-xl font-bold text-blue-900">{simulationResult.scenario.opportunity_score.toFixed(0)}</p>
+                    <p className="text-xl font-bold text-blue-900">{(simulationResult.scenario.opportunity_score ?? 0).toFixed(0)}</p>
                   </div>
                   <div>
                     <p className="text-[11px] text-blue-600">Resource Gap</p>
