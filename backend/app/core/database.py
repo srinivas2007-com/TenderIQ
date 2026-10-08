@@ -2,11 +2,20 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from app.core.config import settings
 
+def _build_connect_args():
+    url = settings.DATABASE_URL
+    if "sqlite" in url:
+        return {"check_same_thread": False}
+    # Supabase pooler (transaction mode, port 6543) requires prepared statements disabled
+    if "pooler.supabase.com" in url or "6543" in url:
+        return {"statement_cache_size": 0}
+    return {}
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
     future=True,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    connect_args=_build_connect_args()
 )
 
 AsyncSessionLocal = async_sessionmaker(
