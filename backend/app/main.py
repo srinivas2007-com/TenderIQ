@@ -1,45 +1,14 @@
 import os
-import sys
-import traceback
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# ── Verbose startup diagnostics ──────────────────────────────────────────────
-print(f"Python version: {sys.version}", flush=True)
-print(f"Working directory: {os.getcwd()}", flush=True)
-print(f"DATABASE_URL set: {'DATABASE_URL' in os.environ}", flush=True)
-print(f"ENVIRONMENT: {os.environ.get('ENVIRONMENT', 'not set')}", flush=True)
-
-try:
-    from app.core.config import settings
-    print(f"Config loaded OK — DB: {settings.DATABASE_URL[:40]}...", flush=True)
-except Exception as e:
-    print(f"FATAL: Config load failed: {e}", flush=True)
-    traceback.print_exc()
-    sys.exit(1)
-
-try:
-    from app.core.database import engine, Base
-    print("Database module imported OK", flush=True)
-except Exception as e:
-    print(f"FATAL: Database import failed: {e}", flush=True)
-    traceback.print_exc()
-    sys.exit(1)
-
-try:
-    from app.api.routes import (
-        auth, company, tenders, dashboard,
-        settings as settings_routes,
-        simulation, portfolio, tasks, team, analytics
-    )
-    print("All routes imported OK", flush=True)
-except Exception as e:
-    print(f"FATAL: Route import failed: {e}", flush=True)
-    traceback.print_exc()
-    sys.exit(1)
-
-# ─────────────────────────────────────────────────────────────────────────────
+from app.core.config import settings
+from app.core.database import engine, Base
+from app.api.routes import (
+    auth, company, tenders, dashboard,
+    settings as settings_routes,
+    simulation, portfolio, tasks, team, analytics
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,9 +16,9 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        print("Database tables initialized successfully.", flush=True)
+        print("Database tables initialized successfully.")
     except Exception as e:
-        print(f"Warning: Database initialization during startup: {e}", flush=True)
+        print(f"Warning: Database initialization during startup: {e}")
     yield
 
 
