@@ -109,7 +109,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Value Proposition / Workflow */}
-      <section className="bg-white border-y border-slate-200 py-16 px-6 sm:px-12">
+      <section id="problem" className="bg-white border-y border-slate-200 py-16 px-6 sm:px-12">
         <div className="max-w-5xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-xs uppercase font-bold tracking-wider text-brand-600 mb-2">Our Philosophy</h2>
@@ -122,7 +122,7 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div id="how-it-works" className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-5 border border-slate-200 rounded-lg bg-slate-50">
               <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center text-sm font-bold mb-3">1</div>
               <h3 className="font-semibold text-sm text-slate-900">Company Profile</h3>
