@@ -5,19 +5,16 @@ from sqlalchemy.future import select
 from app.core.database import get_db
 from app.models.models import User, Company, TeamMember
 from app.schemas.schemas import TeamMemberOut, TeamMemberCreate, TeamMemberUpdate
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_company
 
 router = APIRouter(prefix="/team", tags=["Team Management"])
 
 @router.get("", response_model=List[TeamMemberOut])
 async def list_team_members(
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found.")
 
     res = await db.execute(select(TeamMember).where(TeamMember.company_id == company.id))
     members = res.scalars().all()
@@ -49,13 +46,9 @@ async def list_team_members(
 async def create_team_member(
     member_in: TeamMemberCreate,
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found.")
-
     tm = TeamMember(
         company_id=company.id,
         name=member_in.name,
@@ -73,13 +66,9 @@ async def update_team_member(
     member_id: str,
     member_in: TeamMemberUpdate,
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found.")
-
     res = await db.execute(
         select(TeamMember).where(TeamMember.id == member_id, TeamMember.company_id == company.id)
     )
@@ -100,13 +89,9 @@ async def update_team_member(
 async def delete_team_member(
     member_id: str,
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found.")
-
     res = await db.execute(
         select(TeamMember).where(TeamMember.id == member_id, TeamMember.company_id == company.id)
     )

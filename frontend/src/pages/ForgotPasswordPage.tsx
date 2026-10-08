@@ -28,7 +28,7 @@ export const ForgotPasswordPage: React.FC = () => {
           <div className="w-8 h-8 rounded bg-brand-600 flex items-center justify-center text-white font-bold shadow-sm">
             <ShieldCheck className="w-5 h-5" />
           </div>
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">BIDREADY AI</span>
+          <span className="text-xl font-extrabold text-slate-900 tracking-tight">TenderIQ AI</span>
         </Link>
         <h2 className="text-xl font-bold text-slate-900">Reset your password</h2>
         <p className="mt-1 text-xs text-slate-500">Enter your email address to receive recovery instructions</p>

@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 class ComplexityEffortEngine:
     """
@@ -73,7 +73,7 @@ class ComplexityEffortEngine:
         Management signoff: -1 day
         """
         # Parse date if possible or project 14 days ahead
-        target_date = datetime.utcnow() + timedelta(days=14)
+        target_date = datetime.now(timezone.utc) + timedelta(days=14)
         if official_submission_date_str:
             for fmt in ["%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d"]:
                 try:

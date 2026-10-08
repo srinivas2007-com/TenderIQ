@@ -34,7 +34,7 @@ export const LoginPage: React.FC = () => {
           <div className="w-8 h-8 rounded bg-brand-600 flex items-center justify-center text-white font-bold shadow-sm">
             <ShieldCheck className="w-5 h-5" />
           </div>
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">BIDREADY AI</span>
+          <span className="text-xl font-extrabold text-slate-900 tracking-tight">TenderIQ AI</span>
         </Link>
         <h2 className="text-xl font-bold text-slate-900">Sign in to your account</h2>
         <p className="mt-1 text-xs text-slate-500">Access your tender intelligence workspace</p>

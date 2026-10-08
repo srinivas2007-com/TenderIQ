@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { Tender, SimulationResult } from '../types';
 import { useToast } from '../context/ToastContext';
-import { Sliders, TrendingUp, Sparkles, RefreshCw, Loader2, ArrowRight } from 'lucide-react';
+import { Sliders, TrendingUp, Sparkles, RefreshCw, Loader2, ArrowRight, UploadCloud } from 'lucide-react';
 
 export const SimulatorPage: React.FC = () => {
   const [tenders, setTenders] = useState<Tender[]>([]);
@@ -79,32 +80,53 @@ export const SimulatorPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedTenderId}
-            onChange={(e) => {
-              setSelectedTenderId(e.target.value);
-              triggerSimulation(e.target.value);
-            }}
-            className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          >
-            {tenders.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title.substring(0, 50)}...
-              </option>
-            ))}
-          </select>
+        {tenders.length > 0 && (
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedTenderId}
+              onChange={(e) => {
+                setSelectedTenderId(e.target.value);
+                triggerSimulation(e.target.value);
+              }}
+              className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              {tenders.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title.substring(0, 50)}...
+                </option>
+              ))}
+            </select>
 
-          <button
-            onClick={handleRun}
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            <span>Recalculate Scenario</span>
-          </button>
-        </div>
+            <button
+              onClick={handleRun}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              <span>Recalculate Scenario</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {tenders.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+          <Sliders className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-slate-700">No analyzed tenders available for simulation</h3>
+          <p className="text-xs text-slate-500 mt-1 mb-4 max-w-md mx-auto">
+            The What-If Simulator tests hypothetical capability expansions (e.g. +5 engineers, higher turnover) against candidate tenders in your pipeline. Upload a tender document first to begin.
+          </p>
+          <Link
+            to="/tenders/upload"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
+          >
+            <UploadCloud className="w-4 h-4" />
+            Upload Tender
+          </Link>
+        </div>
+      ) : (
+        <>
+
 
       {/* Highest Impact Alert Banner */}
       {simulationResult && (
@@ -297,6 +319,8 @@ export const SimulatorPage: React.FC = () => {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

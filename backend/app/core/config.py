@@ -1,5 +1,6 @@
 
 import os
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -31,9 +32,7 @@ class Settings(BaseSettings):
     STORAGE_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "uploads")
     MAX_FILE_SIZE_MB: int = 50
 
-    class Config:
-        env_file = ".env"
-        extra = "allow"
+    model_config = ConfigDict(env_file=".env", extra="allow")
 
 settings = Settings()
 os.makedirs(settings.STORAGE_DIR, exist_ok=True)

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.database import get_db
 from app.models.models import User, Company, Tender, TenderOutcome
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_company
 
 router = APIRouter(prefix="/analytics", tags=["Historical Analytics & Learning"])
 
@@ -23,12 +23,9 @@ class RecordOutcomeRequest(BaseModel):
 @router.get("")
 async def get_historical_analytics(
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found.")
 
     # Fetch all user tenders
     t_res = await db.execute(select(Tender).where(Tender.user_id == current_user.id))
@@ -99,13 +96,9 @@ async def get_historical_analytics(
 async def record_tender_outcome(
     req: RecordOutcomeRequest,
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found.")
-
     outcome_record = TenderOutcome(
         tender_id=req.tender_id,
         company_id=company.id,

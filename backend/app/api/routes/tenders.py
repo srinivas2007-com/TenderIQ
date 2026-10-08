@@ -896,10 +896,7 @@ async def recalculate_readiness(
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found.")
 
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=400, detail="Company profile not found.")
+    company = await _ensure_company_for_user(current_user.id, db)
 
     req_dicts = [
         {

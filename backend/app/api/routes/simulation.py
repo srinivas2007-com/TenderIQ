@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.models import User, Company, Tender
 from app.schemas.schemas import SimulationRequest
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_company
 from app.services.matching_engine import MatchingEngine
 from app.services.cost_profit_engine import CostProfitEngine
 from app.services.opportunity_engine import OpportunityEngine
@@ -17,13 +17,10 @@ router = APIRouter(prefix="/simulation", tags=["What-If Simulator"])
 async def run_what_if_simulation(
     req: SimulationRequest,
     current_user: User = Depends(get_current_user),
+    company: Company = Depends(get_current_user_company),
     db: AsyncSession = Depends(get_db)
 ):
-    # Fetch user's company profile
-    comp_res = await db.execute(select(Company).where(Company.user_id == current_user.id))
-    company = comp_res.scalars().first()
-    if not company:
-        raise HTTPException(status_code=400, detail="Company profile not found.")
+
 
     # Target tender
     target_tender = None

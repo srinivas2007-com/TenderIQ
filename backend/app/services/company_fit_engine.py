@@ -4,6 +4,59 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.models import Company
 
+SAMPLE_COMPANY_FIT_TENDER: Dict[str, Any] = {
+    "id": "standard-benchmark",
+    "title": "Tender Qualification Benchmark",
+    "authority": "Procurement Authority",
+    "tender_value": 50000000.0,
+    "min_turnover_cr": 5.0,
+    "min_experience_years": 5,
+    "mandatory_certification": "ISO 9001",
+    "min_team_size": 15,
+}
+
+SAMPLE_COMPANIES_DATA: List[Dict[str, Any]] = [
+    {
+        "id": "sample-technova",
+        "name": "TechNova Solutions",
+        "company_type": "Private Limited Company",
+        "industry": "Software Development & IT",
+        "annual_turnover": 2.6,
+        "average_turnover": 2.6,
+        "years_in_business": 1,
+        "relevant_experience_years": 1,
+        "certifications": ["CMMI Level 3", "MSME Registered"],
+        "workforce_count": 12,
+        "is_sample": True,
+    },
+    {
+        "id": "sample-apex",
+        "name": "Apex Digital Technologies Pvt Ltd",
+        "company_type": "Private Limited Company",
+        "industry": "Civil & Infrastructure",
+        "annual_turnover": 6.5,
+        "average_turnover": 6.5,
+        "years_in_business": 6,
+        "relevant_experience_years": 6,
+        "certifications": ["ISO 9001:2015", "MSME Registered"],
+        "workforce_count": 20,
+        "is_sample": True,
+    },
+    {
+        "id": "sample-innovent",
+        "name": "Innovent Systems India Pvt Ltd",
+        "company_type": "Private Limited Company",
+        "industry": "Enterprise Solutions & Defense",
+        "annual_turnover": 82.40,
+        "average_turnover": 82.40,
+        "years_in_business": 12,
+        "relevant_experience_years": 12,
+        "certifications": ["ISO 9001:2015", "CMMI Level 5"],
+        "workforce_count": 540,
+        "is_sample": True,
+    },
+]
+
 class CompanyFitEngine:
     @staticmethod
     def evaluate_fit(
@@ -15,16 +68,7 @@ class CompanyFitEngine:
         and fit score (0-100) against any real tender's eligibility requirements.
         """
         if not tender_req:
-            tender_req = {
-                "id": "standard-benchmark",
-                "title": "Tender Qualification Benchmark",
-                "authority": "Procurement Authority",
-                "tender_value": 50000000.0,
-                "min_turnover_cr": 5.0,
-                "min_experience_years": 5,
-                "mandatory_certification": "ISO 9001",
-                "min_team_size": 15
-            }
+            tender_req = SAMPLE_COMPANY_FIT_TENDER
 
         req_turnover = float(tender_req.get("min_turnover_cr", 5.0))
         req_exp_years = int(tender_req.get("min_experience_years", 5))

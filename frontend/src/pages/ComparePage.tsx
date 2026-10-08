@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { Tender } from '../types';
 import { useToast } from '../context/ToastContext';
-import { Scale, CheckCircle2, Trophy, Loader2 } from 'lucide-react';
+import { Scale, CheckCircle2, Trophy, Loader2, UploadCloud } from 'lucide-react';
 
 export const ComparePage: React.FC = () => {
   const [tenders, setTenders] = useState<Tender[]>([]);
@@ -100,42 +101,71 @@ export const ComparePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Tender Selection Chips */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-          Select Candidate Tenders to Compare ({selectedIds.length} Selected)
+      {tenders.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+          <Scale className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-slate-700">No candidate tenders to compare yet</h3>
+          <p className="text-xs text-slate-500 mt-1 mb-4 max-w-md mx-auto">
+            The Comparison Matrix evaluates 2 or more candidate tenders side-by-side across commercial feasibility, win potential, and resource requirements.
+          </p>
+          <Link
+            to="/tenders/upload"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
+          >
+            <UploadCloud className="w-4 h-4" />
+            Upload Tender
+          </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {tenders.map((t) => {
-            const isSelected = selectedIds.includes(t.id);
-            return (
-              <div
-                key={t.id}
-                onClick={() => handleToggleSelect(t.id)}
-                className={`cursor-pointer p-3 rounded-lg border text-xs transition-all ${
-                  isSelected
-                    ? 'border-blue-600 bg-blue-50/60 shadow-sm'
-                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-slate-900 line-clamp-1">{t.title}</p>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => {}}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 mt-0.5"
-                  />
-                </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>{t.estimated_value_display || 'Value N/A'}</span>
-                  <span className="font-medium text-blue-700">Opp: {t.opportunity_score?.toFixed(0) || '0'}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      ) : (
+        <>
+          {tenders.length === 1 && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-xs flex items-center justify-between">
+              <span>You have 1 tender in your pipeline. Upload at least 1 more tender to enable side-by-side comparison.</span>
+              <Link to="/tenders/upload" className="font-semibold text-blue-600 hover:underline shrink-0 ml-4">
+                Upload another tender →
+              </Link>
+            </div>
+          )}
+
+          {/* Tender Selection Chips */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              Select Candidate Tenders to Compare ({selectedIds.length} Selected)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {tenders.map((t) => {
+                const isSelected = selectedIds.includes(t.id);
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => handleToggleSelect(t.id)}
+                    className={`cursor-pointer p-3 rounded-lg border text-xs transition-all ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50/60 shadow-sm'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-slate-900 line-clamp-1">{t.title}</p>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 mt-0.5"
+                      />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                      <span>{t.estimated_value_display || 'Value N/A'}</span>
+                      <span className="font-medium text-blue-700">Opp: {t.opportunity_score?.toFixed(0) || '0'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
 
       {/* Comparison Matrix Table */}
       {comparisonData && comparisonData.tenders && (

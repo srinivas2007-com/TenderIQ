@@ -139,6 +139,52 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Fresh Account Quick-Start Guide */}
+      {stats?.total_tenders === 0 && (
+        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-xl p-6 border border-slate-800 shadow-md">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 bg-blue-500/20 text-blue-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-blue-400/30 mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                <span>Account Setup Guide</span>
+              </div>
+              <h2 className="text-base font-bold text-white">Welcome to TenderIQ AI</h2>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Your database is fresh and ready for your organization. Follow these two simple steps to get automated bid readiness scores:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 max-w-xl">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">Step 1</span>
+                  <p className="text-xs font-semibold text-white mt-0.5">Complete Company Profile</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Configure your annual turnover, years in business, team size, and ISO/MSME certifications.</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">Step 2</span>
+                  <p className="text-xs font-semibold text-white mt-0.5">Upload Tender PDF</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Upload tender notice (NIT) to automatically extract requirements, calculate fit, and forecast profits.</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+              <Link
+                to="/company-profile"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 rounded-lg border border-white/20 transition-colors"
+              >
+                <Building2 className="w-4 h-4 text-blue-400" />
+                <span>Edit Company Profile</span>
+              </Link>
+              <Link
+                to="/tenders/upload"
+                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload First Tender</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Multi-tender Resource Conflict Alert (if any) */}
       {stats?.resource_conflicts && stats.resource_conflicts.has_conflict && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-amber-900">
