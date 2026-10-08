@@ -269,11 +269,30 @@ class ApiService {
   }
 
   getTenderPdfUrl(id: string): string {
-    return `${API_BASE_URL}/tenders/${id}/pdf`;
+    const token = this.getToken();
+    return `${API_BASE_URL}/tenders/${id}/pdf${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   }
 
   getTenderExportPdfUrl(id: string): string {
-    return `${API_BASE_URL}/tenders/${id}/export-pdf`;
+    const token = this.getToken();
+    return `${API_BASE_URL}/tenders/${id}/export-pdf${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  }
+
+  async exportTenderPdf(id: string): Promise<Blob> {
+    const token = this.getToken();
+    const url = `${API_BASE_URL}/tenders/${id}/export-pdf`;
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try {
+        const errJson = await res.json();
+        msg = errJson.detail || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+    return res.blob();
   }
 
   // --- What-If Simulation API ---

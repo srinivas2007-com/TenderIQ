@@ -42,6 +42,29 @@ export const TenderDetailPage: React.FC = () => {
   const [isStartingBid, setIsStartingBid] = useState(false);
   const { success, error } = useToast();
   const pollingRef = useRef<any>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!id) return;
+    setExportingPdf(true);
+    try {
+      const blob = await api.exportTenderPdf(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const refName = (tender?.reference_number || id.slice(0, 8)).replace(/[\/\\?%*:|"<>]/g, '_');
+      a.download = `TenderIQ_Report_${refName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      success('PDF report exported successfully');
+    } catch (err: any) {
+      error('PDF export failed', err.message);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const fetchTenderData = async (isBackgroundPoll = false) => {
     if (!id) return;
@@ -231,15 +254,14 @@ export const TenderDetailPage: React.FC = () => {
               <span>{recalculating ? 'Evaluating...' : 'Recalculate'}</span>
             </button>
 
-            <a
-              href={`http://127.0.0.1:8000/api/tenders/${id}/report/pdf`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors"
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export PDF Report</span>
-            </a>
+              <Download className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-bounce' : ''}`} />
+              <span>{exportingPdf ? 'Generating...' : 'Export PDF Report'}</span>
+            </button>
 
             {!tender?.workspace_active ? (
               <button

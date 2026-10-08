@@ -1001,6 +1001,7 @@ async def recalculate_readiness(
     }
 
 @router.get("/{tender_id}/export-pdf")
+@router.get("/{tender_id}/report/pdf")
 async def export_tender_report_pdf(
     tender_id: str,
     current_user: User = Depends(get_current_user),
