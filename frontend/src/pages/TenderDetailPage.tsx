@@ -10,7 +10,6 @@ import { TenderRequirementsTab } from './tabs/TenderRequirementsTab';
 import { TenderDocumentsTab } from './tabs/TenderDocumentsTab';
 import { TenderRisksTab } from './tabs/TenderRisksTab';
 import { TenderDeadlinesTab } from './tabs/TenderDeadlinesTab';
-import { TenderCostProfitTab } from './tabs/TenderCostProfitTab';
 import { TenderResourcesTab } from './tabs/TenderResourcesTab';
 import {
   FileText,
@@ -21,10 +20,7 @@ import {
   ArrowLeft,
   Loader2,
   RotateCw,
-  DollarSign,
-  Users,
-  Download,
-  Briefcase
+  Users
 } from 'lucide-react';
 
 export const TenderDetailPage: React.FC = () => {
@@ -33,35 +29,13 @@ export const TenderDetailPage: React.FC = () => {
   const [analysis, setAnalysis] = useState<TenderAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'analysis' | 'requirements' | 'documents' | 'risks' | 'deadlines' | 'cost_profit' | 'resources'
+    'analysis' | 'requirements' | 'documents' | 'risks' | 'deadlines' | 'resources'
   >('analysis');
   const [recalculating, setRecalculating] = useState(false);
-  const [isStartingBid, setIsStartingBid] = useState(false);
   const { success, error } = useToast();
   const pollingRef = useRef<any>(null);
-  const [exportingPdf, setExportingPdf] = useState(false);
 
-  const handleExportPdf = async () => {
-    if (!id) return;
-    setExportingPdf(true);
-    try {
-      const blob = await api.exportTenderPdf(id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const refName = (tender?.reference_number || id.slice(0, 8)).replace(/[\/\\?%*:|"<>]/g, '_');
-      a.download = `TenderIQ_Report_${refName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      success('PDF report exported successfully');
-    } catch (err: any) {
-      error('PDF export failed', err.message);
-    } finally {
-      setExportingPdf(false);
-    }
-  };
+
 
   const fetchTenderData = async (isBackgroundPoll = false) => {
     if (!id) return;
@@ -122,21 +96,7 @@ export const TenderDetailPage: React.FC = () => {
     }
   };
 
-  const handleStartBid = async () => {
-    if (!id) return;
-    try {
-      setIsStartingBid(true);
-      await api.startBidWorkspace(id);
-      if (tender) {
-        setTender({ ...tender, workspace_active: true, bid_decision: 'BID' });
-      }
-      success('Bid Workspace Activated', 'Tender designated as active target. Workspace initialized.');
-    } catch (err: any) {
-      error('Failed to activate bid', err.message);
-    } finally {
-      setIsStartingBid(false);
-    }
-  };
+
 
   const handleNavigateToPage = (_pageNum: number) => {
     setActiveTab('requirements');
@@ -194,7 +154,6 @@ export const TenderDetailPage: React.FC = () => {
     { id: 'analysis', label: 'Decision Overview', icon: ShieldCheck },
     { id: 'requirements', label: 'Requirements & Sources', icon: CheckSquare },
     { id: 'documents', label: 'Document Checklist', icon: FileText },
-    { id: 'cost_profit', label: 'Cost & Profit Scenarios', icon: DollarSign },
     { id: 'resources', label: 'Resources & Clarifications', icon: Users },
     { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
     { id: 'deadlines', label: 'Dates & Deadlines', icon: Clock },
@@ -248,30 +207,6 @@ export const TenderDetailPage: React.FC = () => {
               <RotateCw className={`w-3.5 h-3.5 ${recalculating ? 'animate-spin' : ''}`} />
               <span>{recalculating ? 'Evaluating...' : 'Recalculate'}</span>
             </button>
-
-            <button
-              onClick={handleExportPdf}
-              disabled={exportingPdf}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Download className={`w-3.5 h-3.5 ${exportingPdf ? 'animate-bounce' : ''}`} />
-              <span>{exportingPdf ? 'Generating...' : 'Export PDF Report'}</span>
-            </button>
-
-            {!tender?.workspace_active ? (
-              <button
-                onClick={handleStartBid}
-                disabled={isStartingBid}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg shadow-sm transition-colors disabled:opacity-50"
-              >
-                <Briefcase className="w-3.5 h-3.5" />
-                <span>{isStartingBid ? 'Activating...' : 'Designate as Bid Target'}</span>
-              </button>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg">
-                Active Bid Target
-              </span>
-            )}
           </div>
         </div>
 
@@ -351,9 +286,6 @@ export const TenderDetailPage: React.FC = () => {
             tenderId={id!}
             onNavigateToPage={handleNavigateToPage}
           />
-        )}
-        {activeTab === 'cost_profit' && (
-          <TenderCostProfitTab tenderId={id!} />
         )}
         {activeTab === 'resources' && (
           <TenderResourcesTab tenderId={id!} />
