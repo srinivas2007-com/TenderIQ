@@ -117,8 +117,67 @@ async def run_what_if_simulation(
         for d in (target_tender.documents or [])
     ]
 
+    base_match = MatchingEngine.evaluate_tender_match(company, req_dicts, doc_dicts)
     sim_match = MatchingEngine.evaluate_tender_match(sim_company, req_dicts, doc_dicts)
-    sim_readiness = float(sim_match.get("readiness_score") or 0.0)
+
+    # Capability augmentation helper: translates capacity levers (Turnover, Projects, Engineers)
+    # into deterministic qualification points
+    def augment_capability_breakdown(comp, raw_sb_dict):
+        sb = {k: (dict(v) if isinstance(v, dict) else v) for k, v in raw_sb_dict.items()}
+        # 1. Financial capability (max 15)
+        to = float(getattr(comp, 'average_turnover', None) or getattr(comp, 'annual_turnover', None) or 1.0)
+        wc = float(getattr(comp, 'working_capital', None) or 0.0) / 10000000.0  # in Cr
+        if to >= 20.0: fin = 15.0
+        elif to >= 10.0: fin = 11.0 + (to - 10.0) * 0.4
+        elif to >= 5.0: fin = 7.0 + (to - 5.0) * 0.8
+        else: fin = max(2.0, to * 1.4)
+        if wc >= 5.0: fin = min(15.0, fin + 2.0)
+        curr_fin = sb.get('financial', {}).get('earned', 0.0)
+        sb['financial']['earned'] = max(curr_fin, round(min(15.0, fin), 1))
+
+        # 2. Experience & Track record (max 15)
+        cp = int(getattr(comp, 'completed_projects_count', None) or 0)
+        if cp >= 12: exp = 15.0
+        elif cp >= 6: exp = 10.0 + (cp - 6) * 0.8
+        elif cp >= 2: exp = 5.0 + (cp - 2) * 1.25
+        else: exp = cp * 2.5
+        curr_exp = sb.get('experience', {}).get('earned', 0.0)
+        sb['experience']['earned'] = max(curr_exp, round(min(15.0, exp), 1))
+
+        # 3. Technical & Engineering capacity (max 20)
+        eng = int(getattr(comp, 'engineers_count', None) or 0)
+        if eng >= 15: tech = 20.0
+        elif eng >= 8: tech = 14.0 + (eng - 8) * 0.85
+        elif eng >= 4: tech = 8.0 + (eng - 4) * 1.5
+        else: tech = eng * 2.0
+        curr_tech = sb.get('technical', {}).get('earned', 0.0)
+        sb['technical']['earned'] = max(curr_tech, round(min(20.0, tech), 1))
+
+        tot = int(round(
+            sb['eligibility'].get('earned', 0.0) +
+            sb['technical'].get('earned', 0.0) +
+            sb['experience'].get('earned', 0.0) +
+            sb['financial'].get('earned', 0.0) +
+            sb['documents'].get('earned', 0.0)
+        ))
+        sb['total'] = min(100, tot)
+        return sb['total'], sb
+
+    base_readiness_calc, base_full_sb = augment_capability_breakdown(company, base_match.get("score_breakdown", {}))
+    sim_readiness_calc, sim_full_sb = augment_capability_breakdown(sim_company, sim_match.get("score_breakdown", {}))
+
+    stored_readiness = (
+        target_tender.analysis.readiness_score
+        if target_tender.analysis and target_tender.analysis.readiness_score is not None
+        else None
+    )
+    if stored_readiness is not None and stored_readiness > 0:
+        base_readiness_val = float(stored_readiness)
+        lift = max(0, sim_readiness_calc - base_readiness_calc)
+        sim_readiness = round(min(100.0, base_readiness_val + lift), 1)
+    else:
+        base_readiness_val = float(base_readiness_calc)
+        sim_readiness = float(sim_readiness_calc)
 
     # 5. Simulate cost & profit with possible overrides
     custom_cost_overrides = {}
@@ -150,21 +209,33 @@ async def run_what_if_simulation(
 
     # 7. Simulate opportunity score
     high_risks = sum(1 for rk in (target_tender.risks or []) if getattr(rk, "severity", "") == "HIGH")
+    base_opp = OpportunityEngine.calculate_opportunity_score(
+        readiness_score=base_readiness_val,
+        score_breakdown=base_full_sb,
+        expected_profit_margin=target_tender.profit_margin or 15.0,
+        risk_count=len(target_tender.risks or []),
+        high_risk_count=high_risks,
+        resource_gap_count=base_res.get("gap_engineers", 0),
+        tender_value=target_tender.estimated_value
+    )
     sim_opp = OpportunityEngine.calculate_opportunity_score(
         readiness_score=sim_readiness,
-        score_breakdown=sim_match.get("score_breakdown", {}),
-        expected_profit_margin=sim_margin,
+        score_breakdown=sim_full_sb,
+        expected_profit_margin=sim_margin or 15.0,
         risk_count=len(target_tender.risks or []),
         high_risk_count=high_risks,
         resource_gap_count=sim_res.get("gap_engineers", 0),
         tender_value=target_tender.estimated_value
     )
 
-    # 8. Impact insights & differences
-    base_readiness_val = float(base_readiness if base_readiness is not None else 70.0)
-    base_opp_val = float(base_opportunity if base_opportunity is not None else 65.0)
-    base_margin_val = float(base_margin if base_margin is not None else 18.0)
-    sim_opp_val = float(sim_opp.get("opportunity_score") or 0.0)
+    stored_opp = target_tender.opportunity_score if target_tender.opportunity_score is not None else None
+    if stored_opp is not None and stored_opp > 0:
+        base_opp_val = float(stored_opp)
+        opp_lift = max(0.0, sim_opp["opportunity_score"] - base_opp["opportunity_score"])
+        sim_opp_val = round(min(100.0, base_opp_val + opp_lift), 1)
+    else:
+        base_opp_val = float(base_opp["opportunity_score"])
+        sim_opp_val = float(sim_opp["opportunity_score"])
 
     base_gap = int(base_res.get("gap_engineers") or 0)
     sim_gap = int(sim_res.get("gap_engineers") or 0)
@@ -173,13 +244,23 @@ async def run_what_if_simulation(
     opp_diff = round(sim_opp_val - base_opp_val, 1)
     gap_diff = base_gap - sim_gap
 
-    highest_impact_improvement = "Adjust scenario levers above to evaluate impact on Tender readiness and profit margin."
-    if gap_diff > 0:
+    eng_diff = sim_company.engineers_count - base_engineers
+    to_diff = round(sim_company.average_turnover - base_turnover, 1)
+    proj_diff = sim_company.completed_projects_count - (company.completed_projects_count or 0)
+
+    if readiness_diff > 0 or opp_diff > 0:
+        improvements = []
+        if eng_diff > 0: improvements.append(f"+{eng_diff} engineers")
+        if to_diff > 0: improvements.append(f"+₹{to_diff} Cr turnover")
+        if proj_diff > 0: improvements.append(f"+{proj_diff} completed works")
+        summary_str = ", ".join(improvements) if improvements else "Capability expansion"
+        highest_impact_improvement = (
+            f"{summary_str} boosted Bid Readiness by +{readiness_diff} pts and Opportunity Score by +{opp_diff} pts."
+        )
+    elif gap_diff > 0:
         highest_impact_improvement = f"Adding engineers eliminated {gap_diff} capacity gap(s) and boosted Opportunity Score by +{max(0.0, opp_diff)} pts."
-    elif readiness_diff > 5:
-        highest_impact_improvement = f"Turnover / Experience adjustment increased Bid Readiness by +{readiness_diff} points."
-    elif opp_diff > 5:
-        highest_impact_improvement = f"Optimized execution costs improved project margin and increased Opportunity Score by +{opp_diff} points."
+    else:
+        highest_impact_improvement = "Adjust scenario levers above to evaluate impact on Tender readiness and profit margin."
 
     return {
         "tender_title": target_tender.title,
@@ -187,7 +268,7 @@ async def run_what_if_simulation(
         "current": {
             "readiness_score": base_readiness_val,
             "opportunity_score": base_opp_val,
-            "expected_margin": base_margin_val,
+            "expected_margin": base_margin,
             "resource_gap": base_gap,
             "engineers": base_engineers,
             "turnover": base_turnover
@@ -204,7 +285,7 @@ async def run_what_if_simulation(
         "differences": {
             "readiness_change": f"{'+' if readiness_diff > 0 else ''}{readiness_diff}",
             "opportunity_change": f"{'+' if opp_diff > 0 else ''}{opp_diff}",
-            "margin_change": f"{'+' if sim_margin - base_margin_val > 0 else ''}{round(sim_margin - base_margin_val, 1)}%",
+            "margin_change": f"{'+' if sim_margin - base_margin > 0 else ''}{round(sim_margin - base_margin, 1)}%",
             "resource_gap_change": f"{'+' if sim_gap - base_gap > 0 else ''}{sim_gap - base_gap}"
         },
         "highest_impact_improvement": highest_impact_improvement

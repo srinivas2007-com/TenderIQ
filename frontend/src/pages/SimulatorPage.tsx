@@ -75,7 +75,7 @@ export const SimulatorPage: React.FC = () => {
   };
 
   const handleRun = () => {
-    triggerSimulation();
+    triggerSimulation(selectedTenderId, engineers, turnover, workingCapital, completedProjects);
     success('Scenario recalculated', 'What-If simulation evaluated successfully.');
   };
 
@@ -99,7 +99,7 @@ export const SimulatorPage: React.FC = () => {
               value={selectedTenderId}
               onChange={(e) => {
                 setSelectedTenderId(e.target.value);
-                triggerSimulation(e.target.value);
+                triggerSimulation(e.target.value, engineers, turnover, workingCapital, completedProjects);
               }}
               className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
