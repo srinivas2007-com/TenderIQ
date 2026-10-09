@@ -12,10 +12,64 @@ import {
   Loader2,
   Calendar,
   Building,
-  TrendingUp,
   Scale,
-  Sparkles
+  AlertTriangle,
+  X
 } from 'lucide-react';
+
+// ── Confirm Delete Modal ─────────────────────────────────────────────────────
+interface DeleteModalProps {
+  tenderTitle: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+const DeleteModal: React.FC<DeleteModalProps> = ({ tenderTitle, onConfirm, onCancel, loading }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 space-y-4 border border-slate-200">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-rose-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Delete Tender?</h3>
+            <p className="text-xs text-slate-500 mt-0.5">This action cannot be undone.</p>
+          </div>
+        </div>
+        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-200">
+        <p className="text-xs text-slate-700 font-medium line-clamp-2">{tenderTitle}</p>
+      </div>
+
+      <p className="text-xs text-slate-500">
+        Deleting this tender will permanently remove the record, AI analysis, risks, requirements, deadlines, and all associated workspace data.
+      </p>
+
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={onCancel}
+          disabled={loading}
+          className="flex-1 text-xs font-semibold py-2 px-4 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={loading}
+          className="flex-1 text-xs font-semibold py-2 px-4 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-colors flex items-center justify-center gap-1.5 disabled:opacity-70"
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+          {loading ? 'Deleting...' : 'Yes, Delete'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export const TendersListPage: React.FC = () => {
   const [tenders, setTenders] = useState<Tender[]>([]);
@@ -24,6 +78,10 @@ export const TendersListPage: React.FC = () => {
   const [recommendationFilter, setRecommendationFilter] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'value'>('date');
   const { success, error } = useToast();
+
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchTenders = async (silent = false) => {
     try {
@@ -58,16 +116,29 @@ export const TendersListPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [tenders]);
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (id: string, title: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setDeleteTarget({ id, title });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await api.deleteTender(id);
-      setTenders(tenders.filter((t) => t.id !== id));
+      await api.deleteTender(deleteTarget.id);
+      setTenders((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       success('Tender deleted', 'Tender record and related intelligence removed.');
+      setDeleteTarget(null);
     } catch (err: any) {
-      error('Delete failed', err.message);
+      error('Delete failed', err.message || 'Unable to delete this tender. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    if (!deleteLoading) setDeleteTarget(null);
   };
 
   const sortedTenders = [...tenders].sort((a, b) => {
@@ -112,6 +183,15 @@ export const TendersListPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <DeleteModal
+          tenderTitle={deleteTarget.title}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          loading={deleteLoading}
+        />
+      )}
       {/* Header with Title & Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div>
@@ -245,8 +325,8 @@ export const TendersListPage: React.FC = () => {
                 {/* Footer Actions */}
                 <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                   <button
-                    onClick={(e) => handleDelete(t.id, e)}
-                    className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                    onClick={(e) => handleDeleteClick(t.id, t.title, e)}
+                    className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-rose-50"
                     title="Delete Tender"
                   >
                     <Trash2 className="w-4 h-4" />

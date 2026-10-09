@@ -1118,14 +1118,21 @@ async def delete_tender(
     result = await db.execute(stmt)
     tender = result.scalars().first()
     if not tender:
-        raise HTTPException(status_code=404, detail="Tender not found.")
+        raise HTTPException(status_code=404, detail="Tender not found or you do not have permission to delete it.")
 
+    # Attempt to remove the uploaded file (ignore errors — Render's FS is ephemeral)
     try:
-        if os.path.exists(tender.file_path):
+        if tender.file_path and os.path.exists(tender.file_path):
             os.remove(tender.file_path)
     except Exception:
-        pass
+        pass  # File already gone or permission error — proceed with DB delete
 
-    await db.delete(tender)
-    await db.commit()
+    try:
+        await db.delete(tender)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete tender: {str(e)}")
+
     return {"message": "Tender and associated analysis removed successfully"}
+
